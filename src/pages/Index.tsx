@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAppStore } from "@/lib/store";
@@ -9,7 +10,11 @@ const Index = () => {
   const location = useLocation();
 
   useEffect(() => {
+    // Don't redirect to dashboard if the URL is for student attendance
     if (location.pathname.startsWith("/attend/")) {
+      // If we're on an attendance URL, redirect directly to the student attendance page
+      const sessionId = location.pathname.split("/attend/")[1];
+      navigate(`/attend/${sessionId}`);
       return;
     }
     
@@ -18,7 +23,8 @@ const Index = () => {
     }
   }, [isAuthenticated, navigate, location.pathname]);
 
-  return <TeacherLogin />;
+  // Only render teacher login if we're not on an attendance URL
+  return !location.pathname.startsWith("/attend/") ? <TeacherLogin /> : null;
 };
 
 export default Index;
