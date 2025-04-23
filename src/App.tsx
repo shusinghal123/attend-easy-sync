@@ -21,7 +21,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/dashboard" element={<TeacherDashboard />} />
           <Route path="/attend/:sessionId" element={<StudentAttendance />} />
-          {/* Ensure any /attend/ routes go directly to StudentAttendance */}
+          {/* Direct route for student attendance */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
