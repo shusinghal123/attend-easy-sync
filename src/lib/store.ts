@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { AttendanceRecord, AttendanceSession, Student, Teacher } from './types';
@@ -71,11 +70,12 @@ export const useAppStore = create<AppState>()(
       
       // Session actions
       createSession: (teacherId: string) => {
+        const sessionId = uuidv4();
         const newSession: AttendanceSession = {
-          id: uuidv4(),
+          id: sessionId,
           teacherId,
           createdAt: new Date().toISOString(),
-          qrCode: `${window.location.origin}/attend/${uuidv4()}`,
+          qrCode: `${window.location.origin}/attend/${sessionId}`,
           otp: null,
           otpGeneratedAt: null,
           expiresAt: null,

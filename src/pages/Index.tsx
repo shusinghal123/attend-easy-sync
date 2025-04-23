@@ -1,18 +1,22 @@
-
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAppStore } from "@/lib/store";
 import TeacherLogin from "@/components/TeacherLogin";
 
 const Index = () => {
   const isAuthenticated = useAppStore((state) => state.isAuthenticated);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
+    if (location.pathname.startsWith("/attend/")) {
+      return;
+    }
+    
     if (isAuthenticated) {
       navigate("/dashboard");
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, location.pathname]);
 
   return <TeacherLogin />;
 };
