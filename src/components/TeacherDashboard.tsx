@@ -15,6 +15,7 @@ import * as XLSX from "xlsx";
 export default function TeacherDashboard() {
   const [otpCountdown, setOtpCountdown] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
+  const [activeTab, setActiveTab] = useState("qr-generator");
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -72,6 +73,8 @@ export default function TeacherDashboard() {
         title: "Session Created",
         description: "QR code generated successfully.",
       });
+      // Automatically switch to OTP tab after QR generation
+      setActiveTab("otp-verification");
     }
   };
   
@@ -194,7 +197,7 @@ export default function TeacherDashboard() {
           </Card>
         </div>
 
-        <Tabs defaultValue="qr-generator" className="bg-white rounded-lg shadow-sm">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="bg-white rounded-lg shadow-sm">
           <TabsList className="p-0 w-full border-b rounded-none gap-8">
             <TabsTrigger value="qr-generator" className="flex-1">QR Generator</TabsTrigger>
             <TabsTrigger value="otp-verification" className="flex-1">OTP Verification</TabsTrigger>
@@ -241,6 +244,13 @@ export default function TeacherDashboard() {
                       className="border-red-300 text-red-600 hover:bg-red-50"
                     >
                       End Session
+                    </Button>
+                    <Button 
+                      onClick={() => setActiveTab("otp-verification")}
+                      className="bg-blue-600 hover:bg-blue-700 gap-2"
+                    >
+                      <KeyRound size={18} />
+                      Go to OTP Generation
                     </Button>
                   </div>
                 </>
