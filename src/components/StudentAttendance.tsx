@@ -6,21 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { useAppStore } from "@/lib/store";
-import { Check } from "lucide-react";
+import { Check, QrCode } from "lucide-react";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 export default function StudentAttendance() {
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const [name, setName] = useState("");
-  const [rollNumber, setRollNumber] = useState("");
-  const [studentId, setStudentId] = useState("");
-  const [otp, setOtp] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [verificationStep, setVerificationStep] = useState<"details" | "otp" | "success">("details");
   const [attendanceRecordId, setAttendanceRecordId] = useState<string | null>(null);
-  const [submitted, setSubmitted] = useState(false);
-  const [verified, setVerified] = useState(false);
   const [attempts, setAttempts] = useState(0);
   
   const {
@@ -31,10 +29,11 @@ export default function StudentAttendance() {
   
   // Find the active session matching the ID from the URL
   const session = sessions.find(
-    s => s.qrCode.includes(sessionId || "") && s.isActive
+    s => s.id === sessionId && s.isActive
   );
   
   useEffect(() => {
+    // Check if session exists and is active
     if (!session) {
       toast({
         variant: "destructive",
@@ -49,27 +48,53 @@ export default function StudentAttendance() {
       
       return () => clearTimeout(timeout);
     }
-  }, [session, navigate, toast]);
-  
-  const handleSubmitDetails = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    
+  }, [session, navigate, toast, sessionId]);
+
+  // Define validation schemas
+  const detailsSchema = z.object({
+    studentName: z.string().min(1, "Name is required"),
+    rollNumber: z.string().min(1, "Roll number is required"),
+    studentId: z.string().min(1, "Student ID is required"),
+  });
+
+  const otpSchema = z.object({
+    otp: z.string().length(6, "OTP must be 6 digits").regex(/^\d+$/, "OTP must contain only digits"),
+  });
+
+  // Create form hooks
+  const detailsForm = useForm<z.infer<typeof detailsSchema>>({
+    resolver: zodResolver(detailsSchema),
+    defaultValues: {
+      studentName: "",
+      rollNumber: "",
+      studentId: "",
+    },
+  });
+
+  const otpForm = useForm<z.infer<typeof otpSchema>>({
+    resolver: zodResolver(otpSchema),
+    defaultValues: {
+      otp: "",
+    },
+  });
+
+  // Handle details submission
+  const onSubmitDetails = (data: z.infer<typeof detailsSchema>) => {
     try {
       if (!session) return;
       
       const record = addAttendanceRecord(
         session.id,
-        name,
-        rollNumber,
-        studentId
+        data.studentName,
+        data.rollNumber,
+        data.studentId
       );
       
       setAttendanceRecordId(record.id);
-      setSubmitted(true);
+      setVerificationStep("otp");
       
       toast({
-        title: "Form Submitted",
+        title: "Details Submitted",
         description: "Please enter the OTP announced by your teacher.",
       });
     } catch (error) {
@@ -78,24 +103,20 @@ export default function StudentAttendance() {
         title: "Submission Failed",
         description: "There was an error submitting your details.",
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
   
-  const handleVerifyOTP = (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  // Handle OTP verification
+  const onSubmitOTP = (data: z.infer<typeof otpSchema>) => {
     if (!attendanceRecordId) return;
     
-    setIsSubmitting(true);
     setAttempts(prev => prev + 1);
     
     try {
-      const success = verifyAttendance(attendanceRecordId, otp);
+      const success = verifyAttendance(attendanceRecordId, data.otp);
       
       if (success) {
-        setVerified(true);
+        setVerificationStep("success");
         toast({
           title: "Attendance Marked",
           description: "Your attendance has been successfully verified.",
@@ -119,7 +140,7 @@ export default function StudentAttendance() {
             title: "Invalid OTP",
             description: `Incorrect or expired OTP. ${2 - attempts} attempts remaining.`,
           });
-          setOtp("");
+          otpForm.reset();
         }
       }
     } catch (error) {
@@ -128,8 +149,6 @@ export default function StudentAttendance() {
         title: "Verification Error",
         description: "An error occurred during verification.",
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
   
@@ -155,13 +174,13 @@ export default function StudentAttendance() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50 to-white p-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center border-b pb-6">
-          <CardTitle className="text-2xl font-bold">Student Attendance</CardTitle>
-          <CardDescription>
-            Please complete the form to mark your attendance
+          <CardTitle className="text-2xl font-bold">Student Panel</CardTitle>
+          <CardDescription className="text-lg">
+            Mark your attendance by scanning QR code and entering OTP
           </CardDescription>
         </CardHeader>
         
-        {verified ? (
+        {verificationStep === "success" ? (
           <CardContent className="pt-6 flex flex-col items-center">
             <div className="h-20 w-20 rounded-full bg-green-100 flex items-center justify-center mb-4">
               <Check className="h-10 w-10 text-green-500" />
@@ -171,100 +190,109 @@ export default function StudentAttendance() {
               Your attendance has been successfully recorded and verified.
             </p>
           </CardContent>
-        ) : !submitted ? (
-          <form onSubmit={handleSubmitDetails}>
-            <CardContent className="pt-6 space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="name" className="text-sm font-medium">
-                  Full Name
-                </label>
-                <Input
-                  id="name"
-                  placeholder="John Doe"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  className="border-blue-200 focus:border-blue-400"
+        ) : verificationStep === "details" ? (
+          <Form {...detailsForm}>
+            <form onSubmit={detailsForm.handleSubmit(onSubmitDetails)}>
+              <CardContent className="pt-6 space-y-4">
+                <FormField
+                  control={detailsForm.control}
+                  name="studentName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Full Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="John Doe" {...field} className="border-blue-200 focus:border-blue-400" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
+                
+                <FormField
+                  control={detailsForm.control}
+                  name="rollNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Roll Number</FormLabel>
+                      <FormControl>
+                        <Input placeholder="CS12345" {...field} className="border-blue-200 focus:border-blue-400" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={detailsForm.control}
+                  name="studentId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Student ID</FormLabel>
+                      <FormControl>
+                        <Input placeholder="STD12345" {...field} className="border-blue-200 focus:border-blue-400" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
               
-              <div className="space-y-2">
-                <label htmlFor="rollNumber" className="text-sm font-medium">
-                  Roll Number
-                </label>
-                <Input
-                  id="rollNumber"
-                  placeholder="CS12345"
-                  value={rollNumber}
-                  onChange={(e) => setRollNumber(e.target.value)}
-                  required
-                  className="border-blue-200 focus:border-blue-400"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label htmlFor="studentId" className="text-sm font-medium">
-                  Student ID
-                </label>
-                <Input
-                  id="studentId"
-                  placeholder="STD12345"
-                  value={studentId}
-                  onChange={(e) => setStudentId(e.target.value)}
-                  required
-                  className="border-blue-200 focus:border-blue-400"
-                />
-              </div>
-            </CardContent>
-            
-            <CardFooter>
-              <Button 
-                type="submit" 
-                className="w-full bg-blue-600 hover:bg-blue-700"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Submitting..." : "Submit"}
-              </Button>
-            </CardFooter>
-          </form>
+              <CardFooter>
+                <Button 
+                  type="submit" 
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  disabled={detailsForm.formState.isSubmitting}
+                >
+                  {detailsForm.formState.isSubmitting ? "Submitting..." : "Submit"}
+                </Button>
+              </CardFooter>
+            </form>
+          </Form>
         ) : (
-          <form onSubmit={handleVerifyOTP}>
-            <CardContent className="pt-6 space-y-4">
-              <p className="text-sm text-center text-gray-600 mb-2">
-                Enter the 6-digit OTP announced by your teacher
-              </p>
-              
-              <div className="space-y-2">
-                <Input
-                  id="otp"
-                  placeholder="Enter 6-digit OTP"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  required
-                  maxLength={6}
-                  pattern="\d{6}"
-                  className="text-center text-xl tracking-widest border-blue-200 focus:border-blue-400"
-                />
-                <p className="text-xs text-center text-gray-500">
-                  OTP is valid for 20 seconds only
+          <Form {...otpForm}>
+            <form onSubmit={otpForm.handleSubmit(onSubmitOTP)}>
+              <CardContent className="pt-6 space-y-4">
+                <p className="text-sm text-center text-gray-600 mb-2">
+                  Enter the 6-digit OTP announced by your teacher
                 </p>
-              </div>
-            </CardContent>
-            
-            <CardFooter className="flex-col gap-2">
-              <Button 
-                type="submit" 
-                className="w-full bg-blue-600 hover:bg-blue-700"
-                disabled={isSubmitting || otp.length !== 6}
-              >
-                {isSubmitting ? "Verifying..." : "Verify OTP"}
-              </Button>
+                
+                <FormField
+                  control={otpForm.control}
+                  name="otp"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          placeholder="Enter 6-digit OTP"
+                          maxLength={6}
+                          {...field}
+                          className="text-center text-xl tracking-widest border-blue-200 focus:border-blue-400"
+                        />
+                      </FormControl>
+                      <FormDescription className="text-xs text-center">
+                        OTP is valid for 20 seconds only
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
               
-              <p className="text-xs text-gray-500 text-center">
-                {3 - attempts} attempts remaining
-              </p>
-            </CardFooter>
-          </form>
+              <CardFooter className="flex-col gap-2">
+                <Button 
+                  type="submit" 
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  disabled={otpForm.formState.isSubmitting || !otpForm.formState.isValid}
+                >
+                  {otpForm.formState.isSubmitting ? "Verifying..." : "Verify OTP"}
+                </Button>
+                
+                <p className="text-xs text-gray-500 text-center">
+                  {3 - attempts} attempts remaining
+                </p>
+              </CardFooter>
+            </form>
+          </Form>
         )}
       </Card>
     </div>
