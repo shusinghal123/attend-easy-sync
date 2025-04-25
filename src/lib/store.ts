@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { AttendanceRecord, AttendanceSession, Student, Teacher } from './types';
@@ -71,12 +72,22 @@ export const useAppStore = create<AppState>()(
       // Session actions
       createSession: (teacherId: string) => {
         const sessionId = uuidv4();
+        
+        // Get the fully qualified domain
+        let baseUrl = '';
+        
+        // Check if we're running in a browser environment
+        if (typeof window !== 'undefined') {
+          // Use current hostname and protocol
+          baseUrl = `${window.location.protocol}//${window.location.host}`;
+        }
+        
         const newSession: AttendanceSession = {
           id: sessionId,
           teacherId,
           createdAt: new Date().toISOString(),
-          // Generate absolute URL for QR code
-          qrCode: `${window.location.origin}/attend/${sessionId}`,
+          // Generate absolute URL for QR code with https:// prefix to ensure it opens as URL not search
+          qrCode: `${baseUrl}/attend/${sessionId}`,
           otp: null,
           otpGeneratedAt: null,
           expiresAt: null,

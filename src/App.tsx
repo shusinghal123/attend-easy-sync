@@ -18,7 +18,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          {/* Place the student attendance route first for priority */}
+          {/* Place the student attendance route first for priority and make sure it works with mobile scans */}
           <Route path="/attend/:sessionId" element={<StudentAttendance />} />
           <Route path="/dashboard" element={<TeacherDashboard />} />
           <Route path="/" element={<Index />} />
