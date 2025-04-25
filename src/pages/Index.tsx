@@ -10,8 +10,7 @@ const Index = () => {
   const location = useLocation();
 
   useEffect(() => {
-    // If we're already on an attend URL, don't do anything in this component
-    // The App.tsx routing will handle directing to StudentAttendance
+    // Don't do anything if we're on an attendance URL
     if (location.pathname.startsWith("/attend/")) {
       return;
     }
@@ -23,7 +22,6 @@ const Index = () => {
   }, [isAuthenticated, navigate, location.pathname]);
 
   // Only show the teacher login if we're at the root path exactly
-  // This prevents the login from showing on attendance URLs
   return location.pathname === "/" ? <TeacherLogin /> : null;
 };
 

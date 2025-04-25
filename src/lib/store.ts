@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { AttendanceRecord, AttendanceSession, Student, Teacher } from './types';
@@ -75,7 +76,8 @@ export const useAppStore = create<AppState>()(
           id: sessionId,
           teacherId,
           createdAt: new Date().toISOString(),
-          qrCode: `${window.location.origin}/attend/${sessionId}`,
+          // Use the direct path with no domain to ensure it works on all environments
+          qrCode: `/attend/${sessionId}`,
           otp: null,
           otpGeneratedAt: null,
           expiresAt: null,

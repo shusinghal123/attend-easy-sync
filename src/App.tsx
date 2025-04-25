@@ -20,8 +20,8 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/dashboard" element={<TeacherDashboard />} />
+          {/* Add the /attend/:sessionId route directly with highest priority */}
           <Route path="/attend/:sessionId" element={<StudentAttendance />} />
-          {/* Direct route for student attendance */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
