@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { AttendanceRecord, AttendanceSession, Student, Teacher } from './types';
@@ -76,7 +75,7 @@ export const useAppStore = create<AppState>()(
           id: sessionId,
           teacherId,
           createdAt: new Date().toISOString(),
-          // Use absolute URL with window.location.origin to ensure it works when scanned
+          // Generate absolute URL for QR code
           qrCode: `${window.location.origin}/attend/${sessionId}`,
           otp: null,
           otpGeneratedAt: null,
