@@ -10,7 +10,7 @@ const Index = () => {
   const location = useLocation();
 
   useEffect(() => {
-    // Don't do anything if we're on an attendance URL
+    // Skip any navigation logic for attendance URLs
     if (location.pathname.startsWith("/attend/")) {
       return;
     }

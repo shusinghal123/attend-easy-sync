@@ -76,8 +76,8 @@ export const useAppStore = create<AppState>()(
           id: sessionId,
           teacherId,
           createdAt: new Date().toISOString(),
-          // Use the direct path with no domain to ensure it works on all environments
-          qrCode: `/attend/${sessionId}`,
+          // Use absolute URL with window.location.origin to ensure it works when scanned
+          qrCode: `${window.location.origin}/attend/${sessionId}`,
           otp: null,
           otpGeneratedAt: null,
           expiresAt: null,

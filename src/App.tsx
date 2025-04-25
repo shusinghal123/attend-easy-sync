@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,10 +17,9 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/dashboard" element={<TeacherDashboard />} />
-          {/* Add the /attend/:sessionId route directly with highest priority */}
           <Route path="/attend/:sessionId" element={<StudentAttendance />} />
+          <Route path="/dashboard" element={<TeacherDashboard />} />
+          <Route path="/" element={<Index />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
